@@ -1,0 +1,212 @@
+*showmap.txt*            Multiple-char mappings helper                  *showmap*
+
+                              showmap MANUAL
+
+1. About showmap                                   |showmap-about|
+2. Quick Start                                     |showmap-quickstart|
+3. Key Mappings and Commands                       |showmap-keymappings|
+                                                   |showmap-commands|
+4. Options                                         |showmap-options|
+5. Highlight Groups                                |showmap-highlight|
+6. Changelog                                       |showmap-changelog|
+7. Contribute                                      |showmap-contribute|
+8. License                                         |showmap-license|
+
+=============================================================================
+1. ABOUT showmap ~
+                                                                *showmap-about*
+
+Multichar mappings starting with the same sequence (Eg. `<Leader>xa`,
+`<Leader>xb`, ...) are useful to make conceptual groups, but they suffer from
+two issues:
+
+- they time out
+- it's not always easy to remember all the keys
+
+Of course, you can always tweak the 'timeout' option, but it's global to all
+mappings, and sometimes you just need a shorter timeout Eg. for insert maps.
+
+Showmap automatically sets helper mappings on the common prefixes, so as to 
+wait for a specific period of time (or indefinitely), while showing a list of
+available keys to complete the current prefix.
+
+In the example above, typing `<Leader>x` and letting it timeout will call the
+showmap helper, listing the completions (`a` and `b`) in the echo area. You
+can then press `a` to execute `<Leader>xa`, or `<C-h>a` to check what the
+mapping does.
+
+=============================================================================
+2. QUICK START ~
+                                                           *showmap-quickstart*
+
+1. Install the plugin Eg. with Pathogen:
+>
+   `cd ~/.vim/bundle && git clone https://github.com/fcpg/vim-showmap`
+<
+2. Use your mappings as usual. If you stall while typing a three-char (by
+   default) normal mapping, a contextual help will show up in the cmdline.
+
+=============================================================================
+3. KEY MAPPINGS AND FUNCTIONS ~
+                                                          *showmap-keymappings*
+
+While showmap helper is active:
+
+- <C-h>
+  Wait for a keystroke and show the corresponding mapping (LHS => RHS) in
+  the echo area. You can then press <Return> to execute it, or any other key
+  to return to the completion list -- unless 'g:showmap_whatis_timeout' is
+  set.
+
+- <C-x>
+  Resume the typing: the following keystrokes will be added to the current
+  prefix in the standard input buffer, as if you typed the whole thing at
+  once. The first keystroke after <C-x> does not time out.
+
+- <C-h><C-x>
+  Prompt user to enter several chars and show the corrseponding mapping.
+
+- <C-a>
+  Show all mappings completing the current prefix.
+  Press again to return to completion list, or <Esc> to quit the helper.
+  You can complete the mapping directly from here, unless
+  'showmap_whatis_all_timeout' is set.
+
+- <Esc>
+  Quit the helper.
+                                                            *showmap-functions*
+
+*showmap#bind_helper*
+Arg: char name sequence
+Arg: mode(s)                 (default: 'n')
+
+Bind the showmap helper to the given sequence.
+Example:
+>
+  call showmap#here("<space>g", 'ni')
+<
+*showmap#autobind*
+Arg: mode(s)
+
+Automatically bind to all mapping prefixes of length
+'showmap_autobind_minlen' for the given mode(s).
+Note that this function is automatically called by default for normal mode
+during startup, unless 'g:showmap_no_autobind' is set.
+Mappings starting with `<Plug>` or `<SNR>` are ignored.
+Example:
+>
+  call showmap#autobind('i')
+<
+*showmap#helper*
+Arg: char name sequence
+Arg: mode
+
+Call the showmap helper. The mappings calling this function are normally
+created automatically by |showmap#here|() and/or |showmap#autobind|().
+Example:
+>
+  nmap <Space>t  showmap#helper("<Space>t","n")
+<
+=============================================================================
+4. OPTIONS ~
+                                                              *showmap-options*
+
+*g:showmap_no_autobind*                                     default: `unset`
+Prevent automatic call of |showmap#autobind|() during startup.
+
+*g:showmap_prompt_separator*                                default: " | "
+Separator between prefix and list of completions.
+
+*g:showmap_list_separator*                                  default: " "
+Separator between completion keys.
+
+*g:showmap_whatis_separator*                                default: " => "
+Separator between LHS and RHS when showing a mapping.
+
+*g:showmap_auto_whatis_all*                                 default: `unset`
+Directly show all mappings (LHS and RHS) instead of the
+(short) list of completions.
+
+*g:showmap_whatis_timeout*                                  default: `unset`
+How long in seconds to show a mapping.
+Wait for a keystroke if unset.
+
+*g:showmap_whatis_all_timeout*                              default: `unset`
+How long in seconds to show the list of all mappings.
+Wait for a keystroke if unset.
+
+*g:showmap_whatis_err_timeout*                              default: `1`
+How long in seconds to show the "Key not mapped" message.
+
+*g:showmap_autobind_minlen*                                 default: `3`
+How long should mappings be before a common prefix is looked
+for by |showmap#autobind|(). If a prefix is found, the helper is
+bound at 'g:showmap_autobind_minlen' - 1 (2nd char of prefix,
+by default).
+
+*g:showmap_sort_list_completion*                            default: `1`
+Whether to sort completion list.
+
+*g:showmap_quit_key*                                        default: `<Esc>`
+Key to quit helper.
+Same format as :map Eg. `"<Space>"` (without backslash).
+
+*g:showmap_help_key*                                        default: `<C-h>`
+Key to show a specific mapping.
+
+*g:showmap_multi_key*                                       default: `<C-x>`
+Key to resume typing from current prefix, or (after <C-h>)
+to show the mapping for a 2+ char completion.
+
+*g:showmap_helpall_key*                                     default: `<C-a>`
+Key to show all mappings with current prefix.
+
+*g:showmap_whatis_exec*                                     default: `<Return>`
+Key to show all mappings with current prefix.
+
+*g:showmap_prompt_notruncate*                               default: `unset`
+Do not truncate completion lists longer than echo area
+(temporarily increase cmdline height if need be).
+
+*g:showmap_captions*                                        default: `unset`
+Dictionary of `[mode][sequence] => "msg"`, for custom helper
+messages (instead of standard completion list).
+
+*g:showmap_no_autobind_default_exceptions*                  default: `unset`
+Ignore the default exceptions for |showmap#autobind|().
+if unset (default), helper is prevented from binding to maps
+that fall back to f/F/t/T Eg. `cfu`.
+
+*g:showmap_autobind_exceptions*                             default: `unset`
+Dictionary of `[mode][sequence] => 1`, to prevent some helper
+bindings by |showmap#autobind|().
+
+=============================================================================
+5. HIGHLIGHT GROUPS ~
+                                                            *showmap-highlight*
+*ShowmapPrefix*      default: MoreMsg
+*ShowmapList*        default: Normal
+*ShowmapLHSPrefix*   default: SpecialKey
+*ShowmapLHSComp*     default: MoreMsg
+*ShowmapRHS*         default: String
+
+=============================================================================
+6. CHANGELOG ~
+                                                            *showmap-changelog*
+
+[1.0] - 2017-02-02
+  - Initial release
+
+=============================================================================
+7. CONTRIBUTE ~
+                                                           *showmap-contribute*
+
+Contribute on [Github](https://github.com/fcpg/vim-showmap)
+
+=============================================================================
+8. LICENSE ~
+                                                              *showmap-license*
+
+[Attribution-ShareAlike 4.0 Int.](https://creativecommons.org/licenses/by-sa/4.0/)
+
+ vim: set expandtab sts=2 ts=2 sw=2 tw=78 ft=help norl:
