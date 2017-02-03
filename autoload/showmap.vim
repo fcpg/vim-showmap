@@ -12,9 +12,7 @@
 " 1st arg is a sequence of printable key names
 " 2nd optional arg is a letter = mode (n,v,o,x,i,c)
 function! showmap#helper(seq, mode)
-  if exists('g:showmap_debug')
-    echom printf("helper(): [%s] [%s]", a:seq, a:mode)
-  endif
+  call s:log2file(printf("helper(): [%s] [%s]", a:seq, a:mode))
   if a:mode != 'n'
     let save_smd = &smd
     let &smd = 0
@@ -88,12 +86,13 @@ function! showmap#bind_helper(seq, ...)
       echoerr "Error: invalid map mode <".mode.">"
       continue
     endif
-    let esc_seq = escape(substitute(a:seq, '<', '<lt>', 'g'), '"')
+    let seq     = substitute(a:seq, '\c<leader>', s:raw2str(g:mapleader), '')
+    let esc_seq = escape(substitute(seq, '<', '<lt>', 'g'), '"')
     let exestr  = mode."map <expr> ".a:seq." showmap#helper(".
         \   '"'.esc_seq.'",'.
         \   '"'.mode.'"'.
         \ ")"
-    if exists('g:showmap_debug')|echom "bind_helper(): exestr: ".exestr|endif
+    call s:log2file("bind_helper(): exestr: ".exestr)
     exe exestr
   endfor
 endfun
@@ -102,9 +101,6 @@ endfun
 " showmap#autobind {{{2
 " Automatically create mapping on existing mappings
 function! showmap#autobind(modes)
-  if exists('g:showmap_debug')
-    echom printf("autobind(): [%s]", a:modes)
-  endif
   call s:log2file(printf("autobind(): [%s]", a:modes))
   for mode in split(a:modes, '\zs')
     if index(s:accepted_modes, mode) == -1
@@ -221,9 +217,7 @@ function! s:whatis(seq, mode)
   else
     let [rc, c, raw] = s:getcharstr()
     if rc == s:key_whatis_exec
-      if exists('g:showmap_debug')
-        echom "  whatis_exec: ".lhs
-      endif
+      call s:log2file("  whatis_exec: ".lhs)
       let feedstr = s:str2raw(lhs)
       call feedkeys(feedstr, 't')
       echo '' | redraw
@@ -335,9 +329,7 @@ endfun
 " 1st arg is a sequence of printable key names
 " 2nd optional arg is a letter = mode (n,v,o,x,i,c)
 function! s:prompt(seq, mode)
-  if exists('g:showmap_debug')
-    echom printf("prompt(): [%s] [%s]", a:seq, a:mode)
-  endif
+  call s:log2file(printf("prompt(): [%s] [%s]", a:seq, a:mode))
   if exists('g:showmap_captions["'.a:mode.'"]["'.a:seq.'"]')
     let caption = g:showmap_captions[a:mode][a:seq]
   else
@@ -385,21 +377,20 @@ endfun
 " 1st arg is a sequence of printable key names
 " 2nd arg is a letter = mode (n,v,o,x,i,c)
 function! s:list_completions(seq, mode)
-  if exists('g:showmap_debug')
-    echom printf("list_comp(): [%s] [%s]", a:seq, a:mode)
-  endif
+  call s:log2file(printf("list_comp(): [%s] [%s]", a:seq, a:mode))
   redir => rawlist
   silent exec a:mode.'map '.a:seq
   redir END
   let rawlines = split(rawlist, "\n")
-  if exists('g:showmap_debug')|echom "  rawlines: ".string(rawlines)|endif
+  call s:log2file("  rawlines: ".string(rawlines))
+  let seq   = substitute(a:seq, '\c<leader>', s:raw2str(g:mapleader), '')
   let lines = []
   for line in rawlines
-    if exists('g:showmap_debug')|echom "  stridx('".line."', '".a:seq.")"|endif
-    let pos = stridx(line, a:seq)
+    call s:log2file("  stridx('".line."', '".seq."')")
+    let pos = stridx(line, seq)
     if pos != -1 
-      " remaining = lhs without starting a:seq
-      let remaining_lhs_to_eol = strpart(line, pos+strlen(a:seq))
+      " remaining = lhs without starting seq
+      let remaining_lhs_to_eol = strpart(line, pos+strlen(seq))
       let spc_pos              = stridx(remaining_lhs_to_eol, ' ')
       let remaining_lhs        = (spc_pos != -1)
             \ ? strpart(remaining_lhs_to_eol, 0, spc_pos)
@@ -418,13 +409,17 @@ endfun
 " Convert raw key to its printable name (eg. ' ' => '<space>')
 " 1st arg is the raw key, from getchar() or similar
 function! s:raw2str(c)
+  call s:log2file(printf("raw2str(): [%s]", a:c))
   if type(a:c) == type(0)
     return nr2char(a:c)
+  elseif a:c == ' '
+    call s:log2file("  keyname: [<Space>]")
+    return '<Space>'
   else
     " input() will eat the content of feedkeys() and stuff will get eval'd
     call feedkeys("\<C-k>".a:c."\<cr>")
     let keyname = input('')
-    if exists('g:showmap_debug')|echom "keyname: ".keyname|endif
+    call s:log2file(printf("  keyname: [%s]", keyname))
     return keyname
   endif
 endfun
@@ -433,10 +428,12 @@ endfun
 " s:str2raw {{{2
 " Convert sequence of key names to raw chars
 function! s:str2raw(seq)
-  let evalstr = printf('"%s"', escape(substitute(a:seq, '<', '\\<', 'g'), '"'))
-  if exists('g:showmap_debug')|echom "  evalstr: ".evalstr|endif
+  call s:log2file(printf("str2raw(): [%s]", a:seq))
+  let seq     = substitute(a:seq, '\c<leader>', g:mapleader, '')
+  let evalstr = printf('"%s"', escape(substitute(seq, '<', '\\<', 'g'), '"'))
+  call s:log2file(printf("  evalstr: [%s]", evalstr))
   let rawseq = eval(evalstr)
-  if exists('g:showmap_debug')|echom "  rawseq: ".rawseq|endif
+  call s:log2file(printf("  rawseq: [%s]", rawseq))
   return rawseq
 endfun
 
@@ -444,7 +441,7 @@ endfun
 " s:log2file {{{2
 " Debug to logfile
 function! s:log2file(msg)
-  if !exists('g:showmap_debug_autobind') | return | endif
+  if !exists('g:showmap_debug') | return | endif
   call writefile(
         \ ['['.strftime("%T").'] '.a:msg],
         \ s:debug_logfile,
