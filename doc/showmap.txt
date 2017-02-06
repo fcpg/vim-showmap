@@ -83,7 +83,7 @@ Arg: mode(s)                 (default: 'n')
 Bind the showmap helper to the given sequence.
 Example:
 >
-  call showmap#here("<space>g", 'ni')
+  call showmap#bind_helper("<space>g", 'ni')
 <
 *showmap#autobind*
 Arg: mode(s)
@@ -102,7 +102,7 @@ Arg: char name sequence
 Arg: mode
 
 Call the showmap helper. The mappings calling this function are normally
-created automatically by |showmap#here|() and/or |showmap#autobind|().
+created automatically by |showmap#bind_helper|() and/or |showmap#autobind|().
 Example:
 >
   nmap <Space>t  showmap#helper("<Space>t","n")
