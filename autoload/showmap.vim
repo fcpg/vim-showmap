@@ -43,11 +43,17 @@ function! showmap#helper(seq, mode)
     endif
     if c != ''
       if maparg(seq . c, a:mode) != ''
-        " map found, exec it
+        " send the keys
         let rawseq  = s:str2raw(seq)
         let feedstr = rawseq . (raw ? rc : c)
         redraw
         call feedkeys(feedstr, 't')
+      elseif exists('g:showmap_no_map_check["'.a:mode.'"]["'.seq.'"]')
+        " send the keys, with noremap
+        let rawseq  = s:str2raw(seq)
+        let feedstr = rawseq . (raw ? rc : c)
+        redraw
+        call feedkeys(feedstr, 'nt')
       elseif !empty(s:list_completions(seq.c, a:mode))
         " prefix only - add char and loop
         let seq .= c

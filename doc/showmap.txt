@@ -179,6 +179,12 @@ that fall back to f/F/t/T Eg. `cfu`.
 Dictionary of `[mode][sequence] => 1`, to prevent some helper
 bindings by |showmap#autobind|().
 
+*g:showmap_no_map_check*                                    default: `unset`
+Dictionary of `[mode][sequence] => 1`, to bypass map checks
+on some sequences. Eg. if you have maps on `z*`, `z@` etc.
+with the helper on `z`, this option lets the helper fall
+back on the standard `z` commands.
+
 =============================================================================
 5. HIGHLIGHT GROUPS ~
                                                             *showmap-highlight*
