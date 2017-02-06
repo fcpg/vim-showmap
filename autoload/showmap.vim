@@ -182,14 +182,17 @@ endfun
 " s:resume_map {{{2
 " Wait for a key, quit helper and resume normal typing
 function! s:resume_map(seq)
+  call s:log2file(printf("resuume_map(): [%s]", a:seq))
   " put back sequence in the feed and resume
   let rawseq = s:str2raw(a:seq)
   " Wait for next char (to avoid timeouts)
   let [rc, c, raw] = s:getcharstr()
-  " clear feed buffer
-  call feedkeys('', 'x')
+  " Discard 'Press Return' prompt if any
+  redraw
   let feedstr = rawseq . (raw ? rc : c)
+  "call s:log2file("  before feedkeys(".string(feedstr).", 't')")
   call feedkeys(feedstr, 't')
+  "call s:log2file("  after feedkeys(".string(feedstr).", 't')")
   echo '' | redraw
 endfun
 
@@ -249,6 +252,7 @@ function! s:whatis_all(seq, mode)
       return 0
     elseif rc == s:key_multi
       call s:resume_map(a:seq)
+      redraw
       return 1
     endif
     if c != '' && maparg(a:seq . c, a:mode) != ''
