@@ -69,8 +69,7 @@ While showmap helper is active:
 - <C-a>
   Show all mappings completing the current prefix.
   Press again to return to completion list, or <Esc> to quit the helper.
-  You can complete the mapping directly from here, unless
-  'showmap_whatis_all_timeout' is set.
+  You can complete the mapping directly from here.
 
 - <Esc>
   Quit the helper.
@@ -131,12 +130,11 @@ Directly show all mappings (LHS and RHS) instead of the
 How long in seconds to show a mapping.
 Wait for a keystroke if unset.
 
-*g:showmap_whatis_all_timeout*                              default: `unset`
-How long in seconds to show the list of all mappings.
-Wait for a keystroke if unset.
+*g:showmap_no_errors*                                       default: `unset`
+Do not show errors (eg. "Key not mapped")
 
-*g:showmap_whatis_err_timeout*                              default: `1`
-How long in seconds to show the "Key not mapped" message.
+*g:showmap_err_timeout*                                     default: `1`
+How long in seconds to show the error messages.
 
 *g:showmap_autobind_minlen*                                 default: `3`
 How long should mappings be before a common prefix is looked

@@ -17,44 +17,44 @@ function! showmap#helper(seq, mode)
     let save_smd = &smd
     let &smd = 0
   endif
-  let not_mapped = 0
-  let wait       = 1
-  let whatis_all = get(g:, 'showmap_auto_whatis_all', 0)
+  " let not_mapped = 0
+  let seq         = a:seq
+  let wait        = 1
+  let prompt_type = get(g:, 'showmap_auto_whatis_all', 0) ? 'l' : 's'
   while wait
     redraw
-    if whatis_all
-      " auto list all - just once
-      let whatis_all = 0
-      let do_quit = s:whatis_all(a:seq, a:mode)
+    call s:prompt(seq, a:mode, prompt_type)
+    let [rc, c, raw] = s:getcharstr()
+    redraw
+    if rc == s:key_quit
+      " quit
+      break
+    elseif rc == s:key_help
+      " help
+      let do_quit = s:whatis(seq, a:mode)
       if do_quit | break | else | continue | endif
-    else
-      call s:prompt(a:seq, a:mode)
-      let [rc, c, raw] = s:getcharstr()
-      if rc == s:key_quit
-        " quit
-        echo '' | redraw
-        break
-      elseif rc == s:key_help
-        " help
-        let do_quit = s:whatis(a:seq, a:mode)
-        if do_quit | break | else | continue | endif
-      elseif rc == s:key_help_all
-        " list all
-        let do_quit = s:whatis_all(a:seq, a:mode)
-        if do_quit | break | else | continue | endif
-      elseif rc == s:key_multi
-        call s:resume_map(a:seq)
-        break
-      endif
-      if c != '' && maparg(a:seq . c, a:mode) != ''
+    elseif rc == s:key_help_all
+      " list all
+      let prompt_type = prompt_type == 'l' ? 's' : 'l'
+      continue
+    elseif rc == s:key_multi
+      call s:resume_map(seq)
+      break
+    endif
+    if c != ''
+      if maparg(seq . c, a:mode) != ''
         " map found, exec it
-        let rawseq  = s:str2raw(a:seq)
+        let rawseq  = s:str2raw(seq)
         let feedstr = rawseq . (raw ? rc : c)
+        redraw
         call feedkeys(feedstr, 't')
-        echo '' | redraw
+      elseif !empty(s:list_completions(seq.c, a:mode))
+        " prefix only - add char and loop
+        let seq .= c
+        continue
       else
-        " no map found
-        let not_mapped = 1
+        call s:error("Not mapped.")
+        continue
       endif
     endif
     let wait = 0
@@ -66,9 +66,9 @@ function! showmap#helper(seq, mode)
     let &cmdheight = t:showmap_cmdheight
     unlet t:showmap_cmdheight
   endif
-  if not_mapped
-    echo "Not mapped." | redraw
-  endif
+  "if not_mapped
+  "  echo "Not mapped." | redraw
+  "endif
   if a:mode == 'i'
     return ''
   endif
@@ -207,8 +207,7 @@ function! s:whatis(seq, mode)
   let map_info = maparg(a:seq.c, a:mode, 0, 1)
   echo '' | redraw
   if empty(map_info)
-    echo "Key(s) not mapped."
-    exe 'sleep' s:whatis_err_timeout
+    call s:error("Key(s) not mapped.")
     return
   endif
   let lhs = map_info['lhs']
@@ -222,12 +221,13 @@ function! s:whatis(seq, mode)
     if rc == s:key_whatis_exec
       call s:log2file("  whatis_exec: ".lhs)
       let feedstr = s:str2raw(lhs)
-      call feedkeys(feedstr, 't')
       echo '' | redraw
+      call feedkeys(feedstr, 't')
       return 1
     endif
   endif
 endfun
+
 
 " s:whatis_all {{{2
 " Show all mappings [lhs+rhs] of seq
@@ -241,35 +241,6 @@ function! s:whatis_all(seq, mode)
     call s:print_map(a:seq, lhs, rhs)
     echon "\n"
   endfor
-  if exists('g:showmap_whatis_all_timeout')
-    exe 'sleep' g:showmap_whatis_all_timeout
-  else
-    let [rc, c, raw] = s:getcharstr()
-    if rc == s:key_quit
-      redraw
-      return 1
-    elseif rc == s:key_help_all || rc == s:key_help
-      return 0
-    elseif rc == s:key_multi
-      call s:resume_map(a:seq)
-      redraw
-      return 1
-    endif
-    if c != '' && maparg(a:seq . c, a:mode) != ''
-      " map found, exec it
-      let rawseq  = s:str2raw(a:seq)
-      let feedstr = rawseq . (raw ? rc : c)
-      " echom "exec_all: ".string(feedstr)
-      call feedkeys(feedstr, 't')
-      redraw
-      return 1
-    else
-      " no map found
-      echon "Key(s) not mapped."
-      exe 'sleep' s:whatis_err_timeout
-      return 0
-    endif
-  endif
 endfun
 
 
@@ -334,17 +305,32 @@ endfun
 " s:prompt {{{2
 " Show prompt
 " 1st arg is a sequence of printable key names
-" 2nd optional arg is a letter = mode (n,v,o,x,i,c)
-function! s:prompt(seq, mode)
-  call s:log2file(printf("prompt(): [%s] [%s]", a:seq, a:mode))
+" 2nd arg is a letter = mode (n,v,o,x,i,c)
+" 3rd arg is the prompt type (s,l) = short or long
+function! s:prompt(seq, mode, type)
+  call s:log2file(printf("prompt(): [%s] [%s] [%s]", a:seq, a:mode, a:type))
   if exists('g:showmap_captions["'.a:mode.'"]["'.a:seq.'"]')
     let caption = g:showmap_captions[a:mode][a:seq]
   else
-    let lines   = s:list_completions(a:seq, a:mode)
-    let caption = join(lines, s:list_separator)
+    if a:type == 'l'
+      call s:whatis_all(a:seq, a:mode)
+    else
+      call s:short_list(a:seq, a:mode)
+    endif
   endif
-  let caplen = strchars(caption) 
-  let maxlen = s:cmd_chars_left(a:seq)
+endfun
+
+
+" s:short_list {{{2
+" Show all completions in a single line
+" 1st arg is a sequence of printable key names
+" 2nd optional arg is a letter = mode (n,v,o,x,i,c)
+function! s:short_list(seq, mode)
+  call s:log2file(printf("short_list(): [%s] [%s]", a:seq, a:mode))
+  let lines   = s:list_completions(a:seq, a:mode)
+  let caption = join(lines, s:list_separator)
+  let caplen  = strchars(caption) 
+  let maxlen  = s:cmd_chars_left(a:seq)
   if caplen > maxlen
     if exists('g:showmap_prompt_notruncate')
       let numlines = 1 + caplen / maxlen
@@ -366,6 +352,18 @@ function! s:prompt(seq, mode)
   echon    caption
   echohl None
   redraw
+endfun
+
+
+" s:error {{{2
+" Show error
+function! s:error(msg)
+  if s:no_errors
+    return
+  endif
+  redraw
+  echo a:msg
+  exe "sleep ".s:err_timeout
 endfun
 
 
@@ -467,7 +465,8 @@ let s:debug_logfile        = get(g:, 'showmap_debug_logfile',
 let s:prompt_sep           = get(g:, 'showmap_prompt_separator', ' | ')
 let s:list_separator       = get(g:, 'showmap_list_separator', ' ')
 let s:map_caption_sep      = get(g:, 'showmap_whatis_separator', ' => ')
-let s:whatis_err_timeout   = get(g:, 'showmap_whatis_err_timeout', 1)
+let s:no_errors            = get(g:, 'showmap_no_errors', 0)
+let s:err_timeout          = get(g:, 'showmap_err_timeout', 1)
 let s:autobind_minlen      = get(g:, 'showmap_autobind_minlen', 3)
 let s:sort_list_completion = get(g:, 'showmap_sort_list_completion', 1)
 let s:key_quit             = char2nr(s:str2raw(
