@@ -247,6 +247,9 @@ function! s:whatis_all(seq, mode)
       return 1
     elseif rc == s:key_help_all || rc == s:key_help
       return 0
+    elseif rc == s:key_multi
+      call s:resume_map(a:seq)
+      return 1
     endif
     if c != '' && maparg(a:seq . c, a:mode) != ''
       " map found, exec it
