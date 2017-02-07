@@ -48,19 +48,23 @@ function! showmap#helper(seq, mode)
         let feedstr = rawseq . (raw ? rc : c)
         redraw
         call feedkeys(feedstr, 't')
-      elseif exists('g:showmap_no_map_check["'.a:mode.'"]["'.seq.'"]')
-        " send the keys, with noremap
-        let rawseq  = s:str2raw(seq)
-        let feedstr = rawseq . (raw ? rc : c)
-        redraw
-        call feedkeys(feedstr, 'nt')
-      elseif !empty(s:list_completions(seq.c, a:mode))
-        " prefix only - add char and loop
-        let seq .= c
-        continue
       else
-        call s:error("Not mapped.")
-        continue
+        let comps = s:list_completions(seq.c, a:mode)
+        if !empty(comps)
+          " prefix only - add char and loop
+          let seq .= c
+          continue
+        elseif !exists('g:showmap_map_check')
+              \ || exists('g:showmap_no_map_check["'.a:mode.'"]["'.seq.'"]')
+          " send the keys, with noremap
+          let rawseq  = s:str2raw(seq)
+          let feedstr = rawseq . (raw ? rc : c)
+          redraw
+          call feedkeys(feedstr, 'nt')
+        else
+          call s:error("Not mapped.")
+          continue
+        endif
       endif
     endif
     let wait = 0

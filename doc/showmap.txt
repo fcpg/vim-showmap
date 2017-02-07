@@ -179,11 +179,19 @@ that fall back to f/F/t/T Eg. `cfu`.
 Dictionary of `[mode][sequence] => 1`, to prevent some helper
 bindings by |showmap#autobind|().
 
+*g:showmap_map_check*                                       default: `unset`
+Show "Key not mapped" message when pressing a key that
+does not trigger a mapoing, and wait for another key till
+an existing mapping is triggered. By default, this option
+is unset, so mappings are not checked and keys are sent
+as is.
+
 *g:showmap_no_map_check*                                    default: `unset`
 Dictionary of `[mode][sequence] => 1`, to bypass map checks
-on some sequences. Eg. if you have maps on `z*`, `z@` etc.
-with the helper on `z`, this option lets the helper fall
-back on the standard `z` commands.
+on some sequences, if |g:showmap_map_check| is set.
+Eg. if you have maps on `z*`, `z@` etc. with the helper on `z`,
+this option lets the helper fall back on the standard `z`
+commands.
 
 =============================================================================
 5. HIGHLIGHT GROUPS ~
@@ -198,6 +206,8 @@ back on the standard `z` commands.
 6. CHANGELOG ~
                                                             *showmap-changelog*
 
+[1.1] - 2017-02-07
+  - Incremental completions, 'map_check' options
 [1.0] - 2017-02-02
   - Initial release
 
