@@ -97,7 +97,7 @@ function! showmap#bind_helper(seq, ...)
       continue
     endif
     let seq     = substitute(a:seq, '\c<leader>', s:raw2str(g:mapleader), '')
-    let esc_seq = escape(substitute(seq, '<', '<lt>', 'g'), '"')
+    let esc_seq = escape(substitute(seq, '<', '<lt>', 'g'), '\"')
     let exestr  = mode."map <expr> ".a:seq." showmap#helper(".
         \   '"'.esc_seq.'",'.
         \   '"'.mode.'"'.
@@ -430,6 +430,9 @@ function! s:raw2str(c)
   elseif a:c == ' '
     call s:log2file("  keyname: [<Space>]")
     return '<Space>'
+  elseif a:c == '\'
+    call s:log2file("  keyname: [\\]")
+    return '\'
   else
     " input() will eat the content of feedkeys() and stuff will get eval'd
     call feedkeys("\<C-k>".a:c."\<cr>")
