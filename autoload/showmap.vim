@@ -458,7 +458,9 @@ endfun
 function! s:str2raw(seq)
   call s:log2file(printf("str2raw(): [%s]", a:seq))
   let seq     = substitute(a:seq, '\c<leader>', s:mapleader(), '')
-  let evalstr = printf('"%s"', escape(substitute(seq, '<', '\\<', 'g'), '"'))
+  let evalstr = printf('"%s"', escape(
+        \ substitute(escape(seq, '\'), '<', '\\<', 'g'),
+        \ '"'))
   call s:log2file(printf("  evalstr: [%s]", evalstr))
   let rawseq = eval(evalstr)
   call s:log2file(printf("  rawseq: [%s]", rawseq))
