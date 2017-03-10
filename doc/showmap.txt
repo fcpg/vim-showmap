@@ -160,7 +160,7 @@ to show the mapping for a 2+ char completion.
 Key to show all mappings with current prefix.
 
 *g:showmap_whatis_exec*                                     default: `<Return>`
-Key to show all mappings with current prefix.
+Key to execute the mapping currently being shown (after <C-h>).
 
 *g:showmap_prompt_notruncate*                               default: `unset`
 Do not truncate completion lists longer than echo area
@@ -181,7 +181,7 @@ bindings by |showmap#autobind|().
 
 *g:showmap_map_check*                                       default: `unset`
 Show "Key not mapped" message when pressing a key that
-does not trigger a mapoing, and wait for another key till
+does not trigger a mapping, and wait for another key till
 an existing mapping is triggered. By default, this option
 is unset, so mappings are not checked and keys are sent
 as is.
