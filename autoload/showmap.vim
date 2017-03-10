@@ -96,8 +96,8 @@ function! showmap#bind_helper(seq, ...)
       echoerr "Error: invalid map mode <".mode.">"
       continue
     endif
-    let seq     = substitute(a:seq, '\c<leader>', s:raw2str(g:mapleader), '')
-    let esc_seq = escape(substitute(seq, '<', '<lt>', 'g'), '"')
+    let seq     = substitute(a:seq, '\c<leader>', s:raw2str(s:mapleader()), '')
+    let esc_seq = escape(substitute(seq, '<', '<lt>', 'g'), '\"')
     let exestr  = mode."map <expr> ".a:seq." showmap#helper(".
         \   '"'.esc_seq.'",'.
         \   '"'.mode.'"'.
@@ -188,6 +188,16 @@ endfun
 "------------------------
 " Private functions {{{1
 "------------------------
+
+" s:mapleader {{{2
+" Normalizes the g:mapleader (and handles the case where it doesn't exist)"
+function! s:mapleader()
+  let l:mapleader = "\\"
+  if exists("g:mapleader")
+    let l:mapleader = g:mapleader
+  endif
+  return l:mapleader
+endfun
 
 " s:resume_map {{{2
 " Wait for a key, quit helper and resume normal typing
@@ -398,7 +408,7 @@ function! s:list_completions(seq, mode)
   redir END
   let rawlines = split(rawlist, "\n")
   call s:log2file("  rawlines: ".string(rawlines))
-  let seq   = substitute(a:seq, '\c<leader>', s:raw2str(g:mapleader), '')
+  let seq   = substitute(a:seq, '\c<leader>', s:raw2str(s:mapleader()), '')
   let lines = []
   for line in rawlines
     call s:log2file("  stridx('".line."', '".seq."')")
@@ -430,6 +440,9 @@ function! s:raw2str(c)
   elseif a:c == ' '
     call s:log2file("  keyname: [<Space>]")
     return '<Space>'
+  elseif a:c == '\'
+    call s:log2file("  keyname: [\\]")
+    return '\'
   else
     " input() will eat the content of feedkeys() and stuff will get eval'd
     call feedkeys("\<C-k>".a:c."\<cr>")
@@ -444,8 +457,10 @@ endfun
 " Convert sequence of key names to raw chars
 function! s:str2raw(seq)
   call s:log2file(printf("str2raw(): [%s]", a:seq))
-  let seq     = substitute(a:seq, '\c<leader>', g:mapleader, '')
-  let evalstr = printf('"%s"', escape(substitute(seq, '<', '\\<', 'g'), '"'))
+  let seq     = substitute(a:seq, '\c<leader>', s:mapleader(), '')
+  let evalstr = printf('"%s"', escape(
+        \ substitute(escape(seq, '\'), '<', '\\<', 'g'),
+        \ '"'))
   call s:log2file(printf("  evalstr: [%s]", evalstr))
   let rawseq = eval(evalstr)
   call s:log2file(printf("  rawseq: [%s]", rawseq))
