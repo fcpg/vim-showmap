@@ -443,12 +443,14 @@ function! s:raw2str(c)
   elseif a:c == '\'
     call s:log2file("  keyname: [\\]")
     return '\'
-  else
+  elseif char2nr(strpart(a:c,0,1)) == 128
     " input() will eat the content of feedkeys() and stuff will get eval'd
     call feedkeys("\<C-k>".a:c."\<cr>")
     let keyname = input('')
     call s:log2file(printf("  keyname: [%s]", keyname))
     return keyname
+  else
+    return a:c
   endif
 endfun
 
